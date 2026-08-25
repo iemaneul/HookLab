@@ -1,0 +1,2 @@
+import { describe,expect,it } from 'vitest'; import { isPrivateIp,sanitizeHeaders } from '../src/utils/security.js';
+describe('request security',()=>{it('redacts credentials',()=>expect(sanitizeHeaders({authorization:'Bearer secret','content-type':'json'})).toEqual({authorization:'••••••••','content-type':'json'}));it('blocks private ranges',()=>{expect(isPrivateIp('127.0.0.1')).toBe(true);expect(isPrivateIp('192.168.1.2')).toBe(true);expect(isPrivateIp('8.8.8.8')).toBe(false);});});

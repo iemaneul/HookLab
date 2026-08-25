@@ -1,0 +1,12 @@
+import { Router } from 'express';
+import { prisma } from '../lib/prisma.js';
+import { endpointSchema } from '../schemas/index.js';
+import type { AuthRequest } from '../types.js';
+const router = Router();
+router.get('/', async (req: AuthRequest, res) => { const data = await prisma.webhookEndpoint.findMany({ where: { workspaceId: req.user!.workspaceId }, include: { _count: { select: { requests: true } } }, orderBy: { createdAt: 'desc' } }); res.json({ data }); });
+router.get('/:id', async (req: AuthRequest, res) => { const data = await prisma.webhookEndpoint.findFirst({ where: { id: String(req.params.id), workspaceId: req.user!.workspaceId } }); if (!data) return res.status(404).json({ error: { message: 'Endpoint not found' } }); res.json({ data }); });
+router.post('/', async (req: AuthRequest, res) => { const input = endpointSchema.parse(req.body); const data = await prisma.webhookEndpoint.create({ data: { ...input, workspaceId: req.user!.workspaceId } }); res.status(201).json({ data }); });
+router.put('/:id', async (req: AuthRequest, res) => { const input = endpointSchema.parse(req.body); const found = await prisma.webhookEndpoint.findFirst({ where: { id: String(req.params.id), workspaceId: req.user!.workspaceId } }); if (!found) return res.status(404).json({ error: { message: 'Endpoint not found' } }); res.json({ data: await prisma.webhookEndpoint.update({ where: { id: found.id }, data: input }) }); });
+router.patch('/:id/status', async (req: AuthRequest, res) => { const status = req.body.status === 'paused' ? 'paused' : 'active'; const found = await prisma.webhookEndpoint.findFirst({ where: { id: String(req.params.id), workspaceId: req.user!.workspaceId } }); if (!found) return res.status(404).json({ error: { message: 'Endpoint not found' } }); res.json({ data: await prisma.webhookEndpoint.update({ where: { id: found.id }, data: { status } }) }); });
+router.delete('/:id', async (req: AuthRequest, res) => { const result = await prisma.webhookEndpoint.deleteMany({ where: { id: String(req.params.id), workspaceId: req.user!.workspaceId } }); if (!result.count) return res.status(404).json({ error: { message: 'Endpoint not found' } }); res.status(204).send(); });
+export default router;
